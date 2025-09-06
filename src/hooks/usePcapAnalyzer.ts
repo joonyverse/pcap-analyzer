@@ -107,6 +107,7 @@ export const usePcapAnalyzer = () => {
   const generateAnalysisResultAsync = async (packets: PacketInfo[]): Promise<AnalysisResult> => {
     const uniqueRtcIds = new Set<number>();
     const frameStats = new Map<number, number>();
+    const rtcDistribution = new Map<number, number>();
     const rmsValues: number[] = [];
 
     const chunkSize = 100; // 100개씩 처리
@@ -115,7 +116,9 @@ export const usePcapAnalyzer = () => {
       const chunk = packets.slice(i, i + chunkSize);
       
       chunk.forEach(packet => {
-        uniqueRtcIds.add(packet.ecpriHeader.rtcId);
+        const rtcId = packet.ecpriHeader.rtcId;
+        uniqueRtcIds.add(rtcId);
+        rtcDistribution.set(rtcId, (rtcDistribution.get(rtcId) || 0) + 1);
 
         if (packet.oranHeader) {
           const frameId = packet.oranHeader.frameId;
@@ -144,6 +147,7 @@ export const usePcapAnalyzer = () => {
       totalPackets: packets.length,
       uniqueRtcIds,
       frameStats,
+      rtcDistribution,
       rmsValues,
       averageRms,
     };

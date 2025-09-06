@@ -66,15 +66,80 @@ export interface AnalysisResult {
   totalPackets: number;
   uniqueRtcIds: Set<number>;
   frameStats: Map<number, number>;
+  rtcDistribution: Map<number, number>;
   rmsValues: number[];
   averageRms: number;
 }
 
-export interface FilterCriteria {
+export type FilterOperator = 'equals' | 'not_equals' | 'greater_than' | 'less_than' | 'contains' | 'regex' | 'between';
+
+export interface FilterRule {
+  field: string;
+  operator: FilterOperator;
+  value: any;
+  enabled: boolean;
+}
+
+export interface AdvancedFilterCriteria {
+  // Basic filters (legacy compatibility)
   rtcId?: number;
-  frameId?: number;
+  frameId?: number;  
   messageType?: number;
   minRms?: number;
   maxRms?: number;
   searchText?: string;
+  
+  // Advanced filters
+  timestampRange?: {
+    start?: number;
+    end?: number;
+  };
+  packetLength?: {
+    min?: number;
+    max?: number;
+  };
+  ethernetSource?: string[];
+  ethernetDestination?: string[];
+  ecpriVersion?: number[];
+  seqIdRange?: {
+    min?: number;
+    max?: number;
+  };
+  oranDirection?: number[];
+  subframeId?: number[];
+  slotId?: number[];
+  symbolId?: number[];
+  sectionId?: number[];
+  payloadSizeRange?: {
+    min?: number;
+    max?: number;
+  };
+  hasIqData?: boolean;
+  iqSampleCount?: {
+    min?: number;
+    max?: number;
+  };
+  
+  // Filter rules system
+  customRules?: FilterRule[];
+  logicalOperator?: 'AND' | 'OR';
+}
+
+export interface FilterCriteria extends AdvancedFilterCriteria {}
+
+export interface FilterPreset {
+  id: string;
+  name: string;
+  description?: string;
+  filters: FilterCriteria;
+  createdAt: number;
+  tags?: string[];
+}
+
+export interface SearchSuggestion {
+  field: string;
+  operator: FilterOperator;
+  value: any;
+  display: string;
+  description?: string;
 }
