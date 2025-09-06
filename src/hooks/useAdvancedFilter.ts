@@ -157,8 +157,8 @@ function matchesLegacyFilters(packet: PacketInfo, filters: FilterCriteria): bool
   if (filters.minRms !== undefined || filters.maxRms !== undefined) {
     if (!packet.iqData) return false;
     const rms = getFieldValue(packet, 'iq.rms');
-    if (filters.minRms !== undefined && rms < filters.minRms) return false;
-    if (filters.maxRms !== undefined && rms > filters.maxRms) return false;
+    if (filters.minRms !== undefined && Number(rms) < filters.minRms) return false;
+    if (filters.maxRms !== undefined && Number(rms) > filters.maxRms) return false;
   }
   
   // Enhanced smart search

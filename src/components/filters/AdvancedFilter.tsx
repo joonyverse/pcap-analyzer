@@ -378,7 +378,7 @@ export const AdvancedFilter: React.FC<AdvancedFilterProps> = ({
                       <Input
                         placeholder="Enter regex pattern..."
                         className="font-mono text-xs"
-                        value={rule.value}
+                        value={String(rule.value)}
                         onChange={(e) => updateRule(index, { ...rule, value: e.target.value })}
                       />
                       <p className="text-xs text-muted-foreground mt-1">
@@ -394,7 +394,7 @@ export const AdvancedFilter: React.FC<AdvancedFilterProps> = ({
                         onChange={(e) => {
                           const min = e.target.value;
                           const max = Array.isArray(rule.value) ? rule.value[1] : '';
-                          updateRule(index, { ...rule, value: [min, max] });
+                          updateRule(index, { ...rule, value: [Number(min) || 0, Number(max) || 0] });
                         }}
                       />
                       <Input
@@ -404,7 +404,7 @@ export const AdvancedFilter: React.FC<AdvancedFilterProps> = ({
                         onChange={(e) => {
                           const max = e.target.value;
                           const min = Array.isArray(rule.value) ? rule.value[0] : '';
-                          updateRule(index, { ...rule, value: [min, max] });
+                          updateRule(index, { ...rule, value: [Number(min) || 0, Number(max) || 0] });
                         }}
                       />
                     </div>
@@ -412,7 +412,7 @@ export const AdvancedFilter: React.FC<AdvancedFilterProps> = ({
                     <Input
                       placeholder={`Enter ${FILTERABLE_FIELDS[rule.field as keyof typeof FILTERABLE_FIELDS]?.type || 'value'}...`}
                       className="flex-1"
-                      value={rule.value}
+                      value={String(rule.value)}
                       onChange={(e) => updateRule(index, { ...rule, value: e.target.value })}
                     />
                   )}
