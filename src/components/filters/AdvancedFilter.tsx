@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo } from 'react';
-import type { PacketInfo, FilterCriteria, FilterRule } from '@/types';
+import type { PacketInfo, FilterCriteria, FilterRule, FilterOperator } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -13,7 +13,7 @@ import {
 interface AdvancedFilterProps {
   packets: PacketInfo[];
   filters: FilterCriteria;
-  onFilterChange: (key: keyof FilterCriteria, value: any) => void;
+  onFilterChange: (key: keyof FilterCriteria, value: unknown) => void;
   onClearFilters: () => void;
 }
 
@@ -90,7 +90,7 @@ export const AdvancedFilter: React.FC<AdvancedFilterProps> = ({
     onClearFilters();
   }, [onClearFilters]);
 
-  const handleAdvancedFilterChange = useCallback((key: keyof FilterCriteria, value: any) => {
+  const handleAdvancedFilterChange = useCallback((key: keyof FilterCriteria, value: unknown) => {
     onFilterChange(key, value);
   }, [onFilterChange]);
   
@@ -360,7 +360,7 @@ export const AdvancedFilter: React.FC<AdvancedFilterProps> = ({
                     </SelectContent>
                   </Select>
                   
-                  <Select value={rule.operator} onValueChange={(operator) => updateRule(index, { ...rule, operator: operator as any })}>
+                  <Select value={rule.operator} onValueChange={(operator) => updateRule(index, { ...rule, operator: operator as FilterOperator })}>
                     <SelectTrigger className="w-32">
                       <SelectValue />
                     </SelectTrigger>

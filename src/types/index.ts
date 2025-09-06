@@ -125,7 +125,7 @@ export interface AdvancedFilterCriteria {
   logicalOperator?: 'AND' | 'OR';
 }
 
-export interface FilterCriteria extends AdvancedFilterCriteria {}
+export type FilterCriteria = AdvancedFilterCriteria;
 
 export interface FilterPreset {
   id: string;

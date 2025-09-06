@@ -18,7 +18,7 @@ import {
 interface PacketFilterProps {
   packets: PacketInfo[];
   filters: FilterCriteria;
-  onFilterChange: (key: keyof FilterCriteria, value: any) => void;
+  onFilterChange: (key: keyof FilterCriteria, value: unknown) => void;
   clearFilters: () => void;
 }
 

@@ -41,7 +41,7 @@ interface PacketListProps {
   packets: PacketInfo[];
   selectedPacket: PacketInfo | null;
   onPacketSelect: (packet: PacketInfo) => void;
-  onFilterAdd: (key: keyof FilterCriteria, value: any) => void;
+  onFilterAdd: (key: keyof FilterCriteria, value: unknown) => void;
 }
 
 const PAGE_SIZE_OPTIONS = [25, 50, 100, 200, 500] as const;
@@ -93,7 +93,7 @@ const MemoizedTableRow = React.memo<{
   packet: PacketInfo;
   isSelected: boolean;
   onSelect: (packet: PacketInfo) => void;
-  onFilterAdd: (key: keyof FilterCriteria, value: any) => void;
+  onFilterAdd: (key: keyof FilterCriteria, value: unknown) => void;
   searchText: string;
 }>(({ packet, isSelected, onSelect, onFilterAdd, searchText }) => {
   const formatTimestamp = useCallback((timestamp: number) => {

@@ -23,7 +23,7 @@ import {
 
 interface PacketDetailsProps {
   packet: PacketInfo | null;
-  onFilterAdd: (key: keyof FilterCriteria, value: any) => void;
+  onFilterAdd: (key: keyof FilterCriteria, value: unknown) => void;
 }
 
 // Enhanced detailed field component with copy functionality and better styling
@@ -31,7 +31,7 @@ const DetailField: React.FC<{
   label: string; 
   value: React.ReactNode; 
   filterKey?: keyof FilterCriteria; 
-  onFilterAdd: Function; 
+  onFilterAdd: (key: keyof FilterCriteria, value: unknown) => void; 
   isFilterable?: boolean; 
   isBadge?: boolean;
   description?: string;
@@ -45,7 +45,7 @@ const DetailField: React.FC<{
       setCopied(true);
       toast.success('Copied to clipboard!');
       setTimeout(() => setCopied(false), 2000);
-    } catch (err) {
+    } catch {
       toast.error('Failed to copy');
     }
   };

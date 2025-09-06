@@ -46,9 +46,9 @@ export const OPERATORS = {
   between: { label: 'between', symbol: '↔' },
 } as const;
 
-function getFieldValue(packet: PacketInfo, field: string): any {
+function getFieldValue(packet: PacketInfo, field: string): unknown {
   const path = field.split('.');
-  let value: any = packet;
+  let value: unknown = packet;
   
   for (const key of path) {
     if (value === null || value === undefined) return undefined;
@@ -57,24 +57,35 @@ function getFieldValue(packet: PacketInfo, field: string): any {
       case 'packet':
         continue;
       case 'ethernet':
-        value = value.ethernetHeader;
+        value = value && typeof value === 'object' && 'ethernetHeader' in value 
+          ? (value as { ethernetHeader: unknown }).ethernetHeader 
+          : undefined;
         continue;
       case 'ecpri':
-        value = value.ecpriHeader;
+        value = value && typeof value === 'object' && 'ecpriHeader' in value 
+          ? (value as { ecpriHeader: unknown }).ecpriHeader 
+          : undefined;
         continue;
       case 'oran':
-        value = value.oranHeader;
+        value = value && typeof value === 'object' && 'oranHeader' in value 
+          ? (value as { oranHeader: unknown }).oranHeader 
+          : undefined;
         continue;
       case 'iq':
-        value = value.iqData;
+        value = value && typeof value === 'object' && 'iqData' in value 
+          ? (value as { iqData: unknown }).iqData 
+          : undefined;
         continue;
       case 'exists':
         return value !== undefined && value !== null;
-      case 'sampleCount':
-        return value ? Math.min(value.i?.length || 0, value.q?.length || 0) : 0;
-      case 'rms':
-        if (!value || !value.i || !value.q) return 0;
-        const { i, q } = value;
+      case 'sampleCount': {
+        if (!value || typeof value !== 'object') return 0;
+        const typedValue = value as { i?: number[]; q?: number[] };
+        return Math.min(typedValue.i?.length || 0, typedValue.q?.length || 0);
+      }
+      case 'rms': {
+        if (!value || typeof value !== 'object' || !('i' in value) || !('q' in value)) return 0;
+        const { i, q } = value as { i: number[]; q: number[] };
         const length = Math.min(i.length, q.length);
         if (length === 0) return 0;
         let sumSquares = 0;
@@ -83,8 +94,14 @@ function getFieldValue(packet: PacketInfo, field: string): any {
           sumSquares += magnitude * magnitude;
         }
         return Math.sqrt(sumSquares / length);
-      default:
-        value = value[key];
+      }
+      default: {
+        if (value && typeof value === 'object' && key in value) {
+          value = (value as Record<string, unknown>)[key];
+        } else {
+          value = undefined;
+        }
+      }
     }
   }
   
@@ -175,7 +192,8 @@ function matchesLegacyFilters(packet: PacketInfo, filters: FilterCriteria): bool
           const operator = match[1] || '=';
           const value = parseFloat(match[2]);
           if (packet.iqData) {
-            const rms = getFieldValue(packet, 'iq.rms');
+            const rmsValue = getFieldValue(packet, 'iq.rms');
+            const rms = typeof rmsValue === 'number' ? rmsValue : 0;
             if (operator === '>' && rms <= value) return false;
             if (operator === '<' && rms >= value) return false;
             if (operator === '' && Math.abs(rms - value) > 0.1) return false;
@@ -305,7 +323,7 @@ export function useAdvancedFilter(packets: PacketInfo[], filters: FilterCriteria
     const queryLower = query.toLowerCase();
     
     // Field suggestions
-    Object.entries(FILTERABLE_FIELDS).forEach(([field, config]) => {
+    for (const [field, config] of Object.entries(FILTERABLE_FIELDS)) {
       if (field.includes(queryLower) || config.label.toLowerCase().includes(queryLower)) {
         suggestions.push({
           field,
@@ -315,11 +333,11 @@ export function useAdvancedFilter(packets: PacketInfo[], filters: FilterCriteria
           description: `Filter by ${config.label}`
         });
       }
-    });
+    }
     
     // Value suggestions based on data
     if (packets.length > 0) {
-      const uniqueValues = new Map<string, Set<any>>();
+      const uniqueValues = new Map<string, Set<unknown>>();
       
       packets.slice(0, 100).forEach(packet => {
         Object.keys(FILTERABLE_FIELDS).forEach(field => {
@@ -338,10 +356,12 @@ export function useAdvancedFilter(packets: PacketInfo[], filters: FilterCriteria
         Array.from(values).slice(0, 5).forEach(value => {
           const valueStr = String(value);
           if (valueStr.toLowerCase().includes(queryLower)) {
+            const suggestionValue = typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean' 
+              ? value : String(value);
             suggestions.push({
               field,
               operator: 'equals',
-              value,
+              value: suggestionValue,
               display: `${config.label}: ${valueStr}`,
               description: `Filter ${config.label} equals ${valueStr}`
             });

@@ -12,7 +12,7 @@ import type { PacketInfo, FilterCriteria } from '@/types';
 
 interface CommandMenuProps {
   packets: PacketInfo[];
-  onFilterChange: (key: keyof FilterCriteria, value: any) => void;
+  onFilterChange: (key: keyof FilterCriteria, value: unknown) => void;
   onPacketSelect: (packet: PacketInfo) => void;
 }
 

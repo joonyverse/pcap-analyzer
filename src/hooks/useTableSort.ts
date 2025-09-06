@@ -56,8 +56,10 @@ export function useTableSort<T>(data: T[], initialSortKey?: string) {
   return { sortedData, requestSort, getSortDirection, sortConfig };
 }
 
-function getNestedValue(obj: any, path: string): any {
-  return path.split('.').reduce((current, key) => {
-    return current?.[key];
+function getNestedValue(obj: unknown, path: string): unknown {
+  return path.split('.').reduce((current: unknown, key) => {
+    return current && typeof current === 'object' && key in current
+      ? (current as Record<string, unknown>)[key]
+      : undefined;
   }, obj);
 }
