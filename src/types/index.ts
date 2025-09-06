@@ -76,7 +76,7 @@ export type FilterOperator = 'equals' | 'not_equals' | 'greater_than' | 'less_th
 export interface FilterRule {
   field: string;
   operator: FilterOperator;
-  value: any;
+  value: string | number | boolean | string[] | number[] | [number, number];
   enabled: boolean;
 }
 
@@ -139,7 +139,7 @@ export interface FilterPreset {
 export interface SearchSuggestion {
   field: string;
   operator: FilterOperator;
-  value: any;
+  value: string | number | boolean;
   display: string;
   description?: string;
 }

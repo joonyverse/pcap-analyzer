@@ -53,7 +53,7 @@ function App() {
     }
   }, [error]);
 
-  const handleFilterChange = (key: keyof FilterCriteria, value: any) => {
+  const handleFilterChange = (key: keyof FilterCriteria, value: unknown) => {
     setFilters(prev => ({
       ...prev,
       [key]: value === '' ? undefined : value
