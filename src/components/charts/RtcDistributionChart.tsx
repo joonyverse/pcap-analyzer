@@ -53,7 +53,7 @@ export const RtcDistributionChart: React.FC<RtcDistributionChartProps> = ({
       },
       tooltip: {
         callbacks: {
-          label: function(context: any) {
+          label: function(context: { label: string; parsed: number }) {
             const label = context.label || '';
             const value = context.parsed;
             const total = sortedRtcs.reduce((sum, [, count]) => sum + count, 0);
