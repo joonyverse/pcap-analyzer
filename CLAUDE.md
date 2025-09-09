@@ -24,10 +24,11 @@ npm run build && npm run preview
 
 ### Client-Side Only Architecture
 This is a **frontend-only** application designed for GitHub Pages deployment. All processing happens in the browser using:
-- React + TypeScript + Vite
+- React 19 + TypeScript + Vite 7
 - Client-side PCAP parsing with pure JavaScript
 - Chart.js for visualization
-- Zustand for state management
+- Custom React hooks for state management
+- Tailwind CSS v4 with shadcn/ui components
 
 ### Core Modules
 
@@ -91,7 +92,8 @@ This is a **frontend-only** application designed for GitHub Pages deployment. Al
 ### State Management
 - Main application state in `usePcapAnalyzer` hook
 - Local component state for UI interactions
-- No global state management needed currently
+- Uses React hooks pattern with custom `useTableSort` and `useAdvancedFilter` hooks
+- No global state management library needed (considered using Zustand but hooks pattern sufficient)
 
 ### Adding New Analysis Features
 1. Define data types in `src/types/index.ts`
@@ -125,4 +127,5 @@ Base URL is configured for GitHub Pages at `/pcap-analyzer/` in `vite.config.ts`
 ### Build Issues
 - Ensure TypeScript compilation passes before build
 - Chart.js requires proper registration of components
-- CSS-in-JS not used - all styles in `App.css`
+- Uses Tailwind CSS v4 with @tailwindcss/vite plugin - styles defined in component files and `src/index.css`
+- UI components use shadcn/ui pattern with Radix UI primitives

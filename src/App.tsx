@@ -28,7 +28,17 @@ import { cn } from '@/lib/utils';
 
 
 function App() {
-  const { packets, analysisResult, isLoading, loadingProgress, error, analyzePcapFile } = usePcapAnalyzer();
+  const { 
+    packets, 
+    analysisResult, 
+    isLoading, 
+    loadingProgress, 
+    loadingStage, 
+    canCancelAnalysis, 
+    error, 
+    analyzePcapFile,
+    cancelAnalysis 
+  } = usePcapAnalyzer();
   const [selectedPacket, setSelectedPacket] = useState<PacketInfo | null>(null);
   const [activeTab, setActiveTab] = useState('dashboard');
   const [filters, setFilters] = useState<FilterCriteria>({});
@@ -159,7 +169,14 @@ function App() {
                   </div>
                 </CardHeader>
                 <CardContent className="pt-0">
-                  <FileUpload onFileSelect={handleFileSelect} isLoading={isLoading} loadingProgress={loadingProgress} />
+                  <FileUpload 
+                    onFileSelect={handleFileSelect} 
+                    isLoading={isLoading} 
+                    loadingProgress={loadingProgress}
+                    loadingStage={loadingStage}
+                    canCancelAnalysis={canCancelAnalysis}
+                    onCancelAnalysis={cancelAnalysis}
+                  />
                 </CardContent>
               </Card>
             </section>

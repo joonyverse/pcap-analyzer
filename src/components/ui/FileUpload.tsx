@@ -19,6 +19,9 @@ interface FileUploadProps {
   onFileSelect: (file: File) => void;
   isLoading: boolean;
   loadingProgress?: number;
+  loadingStage?: string;
+  canCancelAnalysis?: boolean;
+  onCancelAnalysis?: () => void;
 }
 
 interface FileValidation {
@@ -79,7 +82,14 @@ const validateFile = (file: File): FileValidation => {
 };
 
 
-export const FileUpload: React.FC<FileUploadProps> = ({ onFileSelect, isLoading, loadingProgress = 0 }) => {
+export const FileUpload: React.FC<FileUploadProps> = ({ 
+  onFileSelect, 
+  isLoading, 
+  loadingProgress = 0, 
+  loadingStage = 'Processing...', 
+  canCancelAnalysis = false, 
+  onCancelAnalysis 
+}) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [selectedFile, setSelectedFile] = useState<FileMetadata | null>(null);
@@ -219,14 +229,30 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onFileSelect, isLoading,
                 </div>
                 <div className="text-center space-y-2">
                   <p className="text-lg font-medium">Analyzing PCAP file...</p>
-                  <p className="text-sm text-muted-foreground">Please wait while we process your file</p>
+                  <p className="text-sm text-muted-foreground">{loadingStage}</p>
                 </div>
-                <div className="w-full max-w-sm space-y-2">
-                  <Progress value={loadingProgress} className="h-2" />
+                <div className="w-full max-w-sm space-y-3">
+                  <Progress value={loadingProgress} className="h-3" />
                   <div className="flex justify-between text-xs text-muted-foreground">
                     <span>{Math.round(loadingProgress)}% complete</span>
                     <span>{selectedFile?.name || 'Processing...'}</span>
                   </div>
+                  {canCancelAnalysis && onCancelAnalysis && (
+                    <div className="flex justify-center pt-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onCancelAnalysis();
+                        }}
+                        className="text-xs"
+                      >
+                        <Cross2Icon className="h-3 w-3 mr-1" />
+                        Cancel Analysis
+                      </Button>
+                    </div>
+                  )}
                 </div>
               </div>
             ) : (

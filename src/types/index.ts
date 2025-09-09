@@ -143,3 +143,47 @@ export interface SearchSuggestion {
   display: string;
   description?: string;
 }
+
+// Web Worker message types
+export interface WorkerMessage {
+  type: 'parse' | 'progress' | 'complete' | 'error';
+  payload?: unknown;
+}
+
+export interface WorkerParseMessage extends WorkerMessage {
+  type: 'parse';
+  payload: {
+    buffer: ArrayBuffer;
+    options?: {
+      chunkSize?: number;
+      enableBFPC?: boolean;
+      enableRMS?: boolean;
+    };
+  };
+}
+
+export interface WorkerProgressMessage extends WorkerMessage {
+  type: 'progress';
+  payload: {
+    progress: number;
+    stage: 'parsing' | 'enriching' | 'processing' | 'analyzing';
+    processedCount: number;
+    totalCount: number;
+  };
+}
+
+export interface WorkerCompleteMessage extends WorkerMessage {
+  type: 'complete';
+  payload: {
+    packets: PacketInfo[];
+    analysisResult: AnalysisResult;
+  };
+}
+
+export interface WorkerErrorMessage extends WorkerMessage {
+  type: 'error';
+  payload: {
+    message: string;
+    stack?: string;
+  };
+}

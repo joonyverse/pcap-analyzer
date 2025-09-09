@@ -9,10 +9,25 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     assetsDir: 'assets',
+    rollupOptions: {
+      output: {
+        assetFileNames: (assetInfo) => {
+          // Handle worker files with proper naming
+          if (assetInfo.name && assetInfo.name.endsWith('.worker.js')) {
+            return 'assets/workers/[name]-[hash][extname]';
+          }
+          return 'assets/[name]-[hash][extname]';
+        }
+      }
+    }
   },
   resolve: {
     alias: {
       "@": fileURLToPath(new URL("./src", import.meta.url)),
     },
   },
+  worker: {
+    format: 'es',
+    plugins: () => [react(), tailwindcss()]
+  }
 })

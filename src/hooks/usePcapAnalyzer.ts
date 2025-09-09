@@ -1,156 +1,163 @@
-import { useState, useCallback } from 'react';
-import type { PacketInfo, AnalysisResult } from '../types';
-import { PcapParser } from '../parsers/pcap';
-import { OranParser } from '../parsers/oran';
-import { BFPCProcessor } from '../processors/bfpc';
-import { RMSProcessor } from '../processors/rms';
-
-// Helper function to yield control back to browser
-const yieldToMain = () => {
-  return new Promise(resolve => {
-    setTimeout(resolve, 0);
-  });
-};
+import { useState, useCallback, useRef } from 'react';
+import type { 
+  PacketInfo, 
+  AnalysisResult, 
+  WorkerParseMessage, 
+  WorkerMessage,
+  WorkerProgressMessage,
+  WorkerCompleteMessage,
+  WorkerErrorMessage
+} from '../types';
 
 export const usePcapAnalyzer = () => {
   const [packets, setPackets] = useState<PacketInfo[]>([]);
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [loadingProgress, setLoadingProgress] = useState(0);
+  const [loadingStage, setLoadingStage] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
+  const [canCancelAnalysis, setCanCancelAnalysis] = useState(false);
+  
+  const workerRef = useRef<Worker | null>(null);
 
-  const analyzePcapFile = useCallback(async (file: File) => {
-    setIsLoading(true);
-    setLoadingProgress(0);
-    setError(null);
-
-    try {
-      const buffer = await file.arrayBuffer();
-      setLoadingProgress(10);
-
-      const parser = new PcapParser(buffer);
-      
-      // PCAP 헤더 파싱
-      parser.parseGlobalHeader();
-      setLoadingProgress(20);
-
-      // 패킷 파싱
-      const parsedPackets = parser.parsePackets();
-      setLoadingProgress(50);
-
-      // 청크 단위로 O-RAN 패킷 처리
-      const enrichedPackets: PacketInfo[] = [];
-      const chunkSize = 50; // 50개씩 처리
-
-      for (let i = 0; i < parsedPackets.length; i += chunkSize) {
-        const chunk = parsedPackets.slice(i, i + chunkSize);
-        
-        const processedChunk = chunk.map(packet => {
-          if (OranParser.isOranPacket(packet)) {
-            return OranParser.enrichPacketWithOran(packet);
-          }
-          return packet;
-        });
-
-        enrichedPackets.push(...processedChunk);
-        
-        // UI 업데이트를 위해 잠시 양보
-        await yieldToMain();
-        
-        // 진행률 업데이트 (50% ~ 80%)
-        const progress = 50 + ((i + chunkSize) / parsedPackets.length) * 30;
-        setLoadingProgress(Math.min(progress, 80));
-      }
-
-      // BFPC 처리 및 RMS 계산도 청크 단위로 처리
-      const processedPackets: PacketInfo[] = [];
-      
-      for (let i = 0; i < enrichedPackets.length; i += chunkSize) {
-        const chunk = enrichedPackets.slice(i, i + chunkSize);
-        
-        const processedChunk = chunk.map(packet => {
-          if (packet.iqData) {
-            // BFPC 압축 해제 처리
-            const rawIQData = packet.rawData.slice(30); // 헤더 제외
-            const processedIQ = BFPCProcessor.processBFPCData(rawIQData);
-            packet.iqData = processedIQ;
-          }
-          return packet;
-        });
-
-        processedPackets.push(...processedChunk);
-        
-        // UI 업데이트를 위해 잠시 양보
-        await yieldToMain();
-        
-        // 진행률 업데이트 (80% ~ 90%)
-        const progress = 80 + ((i + chunkSize) / enrichedPackets.length) * 10;
-        setLoadingProgress(Math.min(progress, 90));
-      }
-
-      setPackets(processedPackets);
-      setLoadingProgress(95);
-
-      // 분석 결과 생성
-      const analysis = await generateAnalysisResultAsync(processedPackets);
-      setAnalysisResult(analysis);
-      setLoadingProgress(100);
-
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unknown error occurred');
-    } finally {
+  // Cancel analysis function
+  const cancelAnalysis = useCallback(() => {
+    if (workerRef.current) {
+      workerRef.current.terminate();
+      workerRef.current = null;
       setIsLoading(false);
+      setCanCancelAnalysis(false);
       setLoadingProgress(0);
+      setLoadingStage('');
+      setError('Analysis was cancelled by user');
     }
   }, []);
 
-  const generateAnalysisResultAsync = async (packets: PacketInfo[]): Promise<AnalysisResult> => {
-    const uniqueRtcIds = new Set<number>();
-    const frameStats = new Map<number, number>();
-    const rtcDistribution = new Map<number, number>();
-    const rmsValues: number[] = [];
-
-    const chunkSize = 100; // 100개씩 처리
-
-    for (let i = 0; i < packets.length; i += chunkSize) {
-      const chunk = packets.slice(i, i + chunkSize);
-      
-      chunk.forEach(packet => {
-        const rtcId = packet.ecpriHeader.rtcId;
-        uniqueRtcIds.add(rtcId);
-        rtcDistribution.set(rtcId, (rtcDistribution.get(rtcId) || 0) + 1);
-
-        if (packet.oranHeader) {
-          const frameId = packet.oranHeader.frameId;
-          frameStats.set(frameId, (frameStats.get(frameId) || 0) + 1);
-        }
-
-        if (packet.iqData) {
-          const rms = RMSProcessor.calculateRMS(packet.iqData);
-          if (rms > 0) {
-            rmsValues.push(rms);
-          }
-        }
-      });
-
-      // UI 블로킹 방지를 위해 주기적으로 양보
-      if (i % (chunkSize * 5) === 0) {
-        await yieldToMain();
-      }
+  const analyzePcapFile = useCallback(async (file: File, options?: {
+    chunkSize?: number;
+    enableBFPC?: boolean;
+    enableRMS?: boolean;
+  }) => {
+    // Cancel any existing analysis
+    if (workerRef.current) {
+      workerRef.current.terminate();
     }
 
-    const averageRms = rmsValues.length > 0 
-      ? rmsValues.reduce((sum, rms) => sum + rms, 0) / rmsValues.length 
-      : 0;
+    setIsLoading(true);
+    setCanCancelAnalysis(true);
+    setLoadingProgress(0);
+    setLoadingStage('Initializing...');
+    setError(null);
 
-    return {
-      totalPackets: packets.length,
-      uniqueRtcIds,
-      frameStats,
-      rtcDistribution,
-      rmsValues,
-      averageRms,
-    };
+    try {
+      // Read file as ArrayBuffer
+      const buffer = await file.arrayBuffer();
+      
+      // Create new worker
+      workerRef.current = new Worker(
+        new URL('../workers/pcap-parser.worker.ts', import.meta.url),
+        { type: 'module' }
+      );
+
+      // Set up promise to handle worker completion
+      const workerPromise = new Promise<{ packets: PacketInfo[], analysisResult: AnalysisResult }>((resolve, reject) => {
+        if (!workerRef.current) {
+          reject(new Error('Worker not initialized'));
+          return;
+        }
+
+        workerRef.current.onmessage = (event: MessageEvent<WorkerMessage>) => {
+          const message = event.data;
+
+          switch (message.type) {
+            case 'progress': {
+              const progressData = (message as WorkerProgressMessage).payload;
+              setLoadingProgress(progressData.progress);
+              setLoadingStage(getStageDisplayName(progressData.stage, progressData.processedCount, progressData.totalCount));
+              break;
+            }
+
+            case 'complete': {
+              const completeData = (message as WorkerCompleteMessage).payload;
+              resolve(completeData);
+              break;
+            }
+
+            case 'error': {
+              const errorData = (message as WorkerErrorMessage).payload;
+              reject(new Error(errorData.message));
+              break;
+            }
+          }
+        };
+
+        workerRef.current.onerror = (error) => {
+          reject(new Error(`Worker error: ${error.message}`));
+        };
+      });
+
+      // Send parse message to worker
+      const parseMessage: WorkerParseMessage = {
+        type: 'parse',
+        payload: {
+          buffer,
+          options: {
+            chunkSize: 50,
+            enableBFPC: true,
+            enableRMS: true,
+            ...options
+          }
+        }
+      };
+
+      workerRef.current.postMessage(parseMessage);
+
+      // Wait for completion
+      const { packets: processedPackets, analysisResult: analysis } = await workerPromise;
+
+      // Update state with results
+      setPackets(processedPackets);
+      setAnalysisResult(analysis);
+      setLoadingStage('Complete');
+
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
+      setError(errorMessage);
+      console.error('PCAP analysis error:', err);
+    } finally {
+      // Clean up worker
+      if (workerRef.current) {
+        workerRef.current.terminate();
+        workerRef.current = null;
+      }
+      
+      setIsLoading(false);
+      setCanCancelAnalysis(false);
+      setLoadingProgress(0);
+      setLoadingStage('');
+    }
+  }, []);
+
+  // Helper function to convert stage names to display names
+  const getStageDisplayName = (
+    stage: 'parsing' | 'enriching' | 'processing' | 'analyzing',
+    processedCount: number = 0,
+    totalCount: number = 0
+  ): string => {
+    const countText = totalCount > 0 ? ` (${processedCount}/${totalCount})` : '';
+    
+    switch (stage) {
+      case 'parsing':
+        return `Parsing PCAP file${countText}`;
+      case 'enriching':
+        return `Processing O-RAN headers${countText}`;
+      case 'processing':
+        return `Processing BFPC compression${countText}`;
+      case 'analyzing':
+        return `Generating analysis${countText}`;
+      default:
+        return 'Processing...';
+    }
   };
 
   const filterPackets = useCallback((filter: {
@@ -177,8 +184,11 @@ export const usePcapAnalyzer = () => {
     analysisResult,
     isLoading,
     loadingProgress,
+    loadingStage,
+    canCancelAnalysis,
     error,
     analyzePcapFile,
+    cancelAnalysis,
     filterPackets,
   };
 };
