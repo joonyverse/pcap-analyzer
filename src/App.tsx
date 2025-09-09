@@ -90,7 +90,7 @@ function App() {
 
           {/* Professional Header */}
           <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div className="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-8 xl:px-12">
               <div className="flex h-16 items-center justify-between">
                 {/* Logo and Title */}
                 <div className="flex items-center space-x-4">
@@ -141,7 +141,7 @@ function App() {
             </div>
           </header>
 
-          <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+          <main className="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-8 xl:px-12 py-8 space-y-8">
             {/* Upload Section */}
             <section>
               <Card className="border-0 shadow-sm bg-gradient-to-r from-background to-muted/20">
@@ -322,7 +322,7 @@ function App() {
                         <div className="p-8 space-y-8">
                           <AnalysisSummary analysis={analysisResult} />
                           {analysisResult && (
-                            <div className="grid gap-8 lg:grid-cols-3">
+                            <div className="grid gap-8 lg:grid-cols-3 2xl:grid-cols-3">
                               <RMSChart
                                 rmsValues={analysisResult.rmsValues}
                                 title="RMS Values Over Time"
@@ -351,7 +351,7 @@ function App() {
                           <Card className="border-0 shadow-sm">
                             <div className="h-[70vh] rounded-lg overflow-hidden">
                               <PanelGroup direction="horizontal">
-                                <Panel defaultSize={70} minSize={30}>
+                                <Panel defaultSize={75} minSize={40}>
                                   <PacketList
                                     packets={filteredPackets}
                                     selectedPacket={selectedPacket}
@@ -360,7 +360,7 @@ function App() {
                                   />
                                 </Panel>
                                 <PanelResizeHandle className="w-0.5 bg-border/60 hover:w-1 hover:bg-border transition-all duration-200" />
-                                <Panel defaultSize={30} minSize={25}>
+                                <Panel defaultSize={25} minSize={20}>
                                   <PacketDetails 
                                     packet={selectedPacket} 
                                     onFilterAdd={handleFilterChange} 
@@ -381,7 +381,7 @@ function App() {
           {/* Professional Footer */}
           {packets.length === 0 && !isLoading && !error && (
             <footer className="border-t bg-muted/30 mt-16">
-              <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12">
+              <div className="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-8 xl:px-12 py-12">
                 <div className="grid gap-8 lg:grid-cols-3">
                   {/* Brand Section */}
                   <div className="space-y-4">
